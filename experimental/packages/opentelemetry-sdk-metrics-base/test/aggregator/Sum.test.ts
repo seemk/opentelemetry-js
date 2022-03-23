@@ -17,7 +17,8 @@
 import { HrTime } from '@opentelemetry/api';
 import * as assert from 'assert';
 import { SumAccumulation, SumAggregator } from '../../src/aggregator';
-import { MetricData, DataPointType } from '../../src/export/MetricData';
+import { AggregatorKind } from '../../src/aggregator/types';
+import { MetricData } from '../../src/export/MetricData';
 import { commonValues, defaultInstrumentDescriptor } from '../util';
 
 describe('SumAggregator', () => {
@@ -79,7 +80,7 @@ describe('SumAggregator', () => {
 
       const expected: MetricData = {
         descriptor: defaultInstrumentDescriptor,
-        dataPointType: DataPointType.SINGULAR,
+        aggregation: AggregatorKind.SUM,
         dataPoints: [
           {
             attributes: {},

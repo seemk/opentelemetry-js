@@ -17,7 +17,8 @@
 import { HrTime } from '@opentelemetry/api';
 import * as assert from 'assert';
 import { LastValueAccumulation, LastValueAggregator } from '../../src/aggregator';
-import { MetricData, DataPointType } from '../../src/export/MetricData';
+import { AggregatorKind } from '../../src/aggregator/types';
+import { MetricData } from '../../src/export/MetricData';
 import { commonValues, defaultInstrumentDescriptor, sleep } from '../util';
 
 describe('LastValueAggregator', () => {
@@ -101,7 +102,7 @@ describe('LastValueAggregator', () => {
 
       const expected: MetricData = {
         descriptor: defaultInstrumentDescriptor,
-        dataPointType: DataPointType.SINGULAR,
+        aggregation: AggregatorKind.LAST_VALUE,
         dataPoints: [
           {
             attributes: {},

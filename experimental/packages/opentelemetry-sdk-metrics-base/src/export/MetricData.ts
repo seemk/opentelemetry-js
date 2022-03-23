@@ -19,17 +19,14 @@ import { Attributes } from '@opentelemetry/api-metrics';
 import { InstrumentationLibrary } from '@opentelemetry/core';
 import { Resource } from '@opentelemetry/resources';
 import { InstrumentDescriptor } from '../InstrumentDescriptor';
-import { Histogram } from '../aggregator/types';
+import { AggregatorKind, Histogram } from '../aggregator/types';
 
 /**
  * Basic metric data fields.
  */
 export interface BaseMetricData {
   readonly descriptor: InstrumentDescriptor;
-  /**
-   * DataPointType of the metric instrument.
-   */
-  readonly dataPointType: DataPointType;
+  readonly aggregation: AggregatorKind;
 }
 
 /**
@@ -37,7 +34,6 @@ export interface BaseMetricData {
  * SumAggregation.
  */
 export interface SingularMetricData extends BaseMetricData {
-  readonly dataPointType: DataPointType.SINGULAR;
   readonly dataPoints: DataPoint<number>[];
 }
 
@@ -45,7 +41,6 @@ export interface SingularMetricData extends BaseMetricData {
  * Represents a metric data aggregated by a HistogramAggregation.
  */
 export interface HistogramMetricData extends BaseMetricData {
-  readonly dataPointType: DataPointType.HISTOGRAM;
   readonly dataPoints: DataPoint<Histogram>[];
 }
 
@@ -62,15 +57,6 @@ export interface InstrumentationLibraryMetrics {
 export interface ResourceMetrics {
   resource: Resource;
   instrumentationLibraryMetrics: InstrumentationLibraryMetrics[];
-}
-
-/**
- * The aggregated point data type.
- */
-export enum DataPointType {
-  SINGULAR,
-  HISTOGRAM,
-  EXPONENTIAL_HISTOGRAM,
 }
 
 /**

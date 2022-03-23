@@ -142,7 +142,7 @@ export class HistogramAggregator implements Aggregator<HistogramAccumulation> {
     endTime: HrTime): Maybe<HistogramMetricData> {
     return {
       descriptor,
-      dataPointType: DataPointType.HISTOGRAM,
+      aggregation: this.kind,
       dataPoints: accumulationByAttributes.map(([attributes, accumulation]) => {
         return {
           attributes,

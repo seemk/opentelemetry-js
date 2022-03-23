@@ -72,7 +72,7 @@ export class LastValueAggregator implements Aggregator<LastValueAccumulation> {
     endTime: HrTime): Maybe<SingularMetricData> {
     return {
       descriptor,
-      dataPointType: DataPointType.SINGULAR,
+      aggregation: this.kind,
       dataPoints: accumulationByAttributes.map(([attributes, accumulation]) => {
         return {
           attributes,

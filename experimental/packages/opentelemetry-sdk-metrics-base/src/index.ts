@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-export { Histogram } from './aggregator/types';
+export { AggregatorKind, Histogram } from './aggregator/types';
 export * from './export/AggregationTemporality';
 export * from './export/MetricData';
 export { MeterProvider, MeterProviderOptions } from './MeterProvider';

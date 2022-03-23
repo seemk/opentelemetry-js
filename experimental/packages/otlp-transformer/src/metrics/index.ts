@@ -15,31 +15,29 @@
  */
 import type { InstrumentationLibrary } from '@opentelemetry/core';
 import type { Resource } from '@opentelemetry/resources';
-import type { MetricRecord } from '@opentelemetry/sdk-metrics-base';
+import type { ResourceMetrics, MetricData } from '@opentelemetry/sdk-metrics-base-wip';
 import { toAttributes } from '../common/internal';
 import { toMetric } from './internal';
-import type { IExportMetricsServiceRequest } from './types';
+import type { IExportMetricsServiceRequest, IResourceMetrics } from './types';
 
-export function createExportMetricsServiceRequest(metricRecords: MetricRecord[], startTime: number): IExportMetricsServiceRequest | null {
-  if (metricRecords.length === 0) {
+export function createExportMetricsServiceRequest(metrics: ResourceMetrics[], startTime: number): IExportMetricsServiceRequest | null {
+  if (metrics.length === 0) {
     return null;
   }
 
   return {
-    resourceMetrics: metricRecordsToResourceMetrics(metricRecords).map(({ resource, resourceMetrics, resourceSchemaUrl }) => ({
+    resourceMetrics: metrics.map(({ resource, instrumentationLibraryMetrics }) => ({
       resource: {
         attributes: toAttributes(resource.attributes),
         droppedAttributesCount: 0,
       },
-      instrumentationLibraryMetrics: resourceMetrics.map(({ instrumentationLibrary, instrumentationLibraryMetrics, librarySchemaUrl }) => ({
+      instrumentationLibraryMetrics: instrumentationLibraryMetrics.map(({ instrumentationLibrary, metrics: ilMetrics }) => ({
         instrumentationLibrary: {
           name: instrumentationLibrary.name,
           version: instrumentationLibrary.version,
         },
-        metrics: instrumentationLibraryMetrics.map(m => toMetric(m, startTime)),
-        schemaUrl: librarySchemaUrl,
+        metrics: ilMetrics.map(m => toMetric(m, startTime)),
       })),
-      schemaUrl: resourceSchemaUrl,
     }))
   };
 }
@@ -52,13 +50,30 @@ type IntermediateResourceMetrics = {
 
 type IntermediateInstrumentationLibraryMetrics = {
   instrumentationLibrary: InstrumentationLibrary,
-  instrumentationLibraryMetrics: MetricRecord[],
+  instrumentationLibraryMetrics: MetricData[],
   librarySchemaUrl?: string,
 };
 
-function metricRecordsToResourceMetrics(metricRecords: MetricRecord[]): IntermediateResourceMetrics[] {
-  const resourceMap: Map<Resource, Map<string, MetricRecord[]>> = new Map();
-
+function metricRecordsToResourceMetrics(metrics: ResourceMetrics[]): IResourceMetrics[] {
+  return metrics.map(({ resource, instrumentationLibraryMetrics }) => {
+    return {
+      resource: {
+        attributes: toAttributes(resource.attributes),
+        droppedAttributesCount: 0,
+      },
+      instrumentationLibraryMetrics: instrumentationLibraryMetrics.map(({ instrumentationLibrary, metrics: ilMetrics }) => {
+        return {
+          instrumentationLibrary: {
+            name: instrumentationLibrary.name,
+            version: instrumentationLibrary.version,
+            schemaUrl: instrumentationLibrary.schemaUrl
+          },
+          metrics: ilMetrics.map()
+          
+        };
+      }),
+    }
+  });
   for (const record of metricRecords) {
     let ilmMap = resourceMap.get(record.resource);
 

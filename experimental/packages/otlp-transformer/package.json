@@ -71,7 +71,7 @@
   "dependencies": {
     "@opentelemetry/core": "1.0.1",
     "@opentelemetry/resources": "1.0.1",
-    "@opentelemetry/sdk-metrics-base": "0.27.0",
+    "@opentelemetry/sdk-metrics-base-wip": "0.27.0",
     "@opentelemetry/sdk-trace-base": "1.0.1"
   }
 }

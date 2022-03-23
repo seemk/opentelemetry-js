@@ -15,19 +15,25 @@
  */
 import { AggregationTemporality, ValueType } from '@opentelemetry/api-metrics';
 import { hrTimeToNanoseconds } from '@opentelemetry/core';
-import type { Histogram, MetricRecord, Point } from '@opentelemetry/sdk-metrics-base';
-import { AggregatorKind, MetricKind } from '@opentelemetry/sdk-metrics-base';
+import { AggregatorKind, Histogram, InstrumentType, MetricData } from '@opentelemetry/sdk-metrics-base-wip';
 import { toAttributes } from '../common/internal';
 import { EAggregationTemporality, IGauge, IHistogram, IHistogramDataPoint, IMetric, INumberDataPoint, ISum } from './types';
 
 
-export function toMetric(metric: MetricRecord, startTime: number): IMetric {
+export function toMetric(metric: MetricData, startTime: number, aggregationTemporality: AggregationTemporality): IMetric {
   const out: IMetric = {
     description: metric.descriptor.description,
     name: metric.descriptor.name,
     unit: metric.descriptor.unit,
   };
 
+  if (metric.descriptor.type === InstrumentType.OBSERVABLE_GAUGE) {
+    out.gauge = toGauge(metric, startTime);
+  } if (metric.aggregation === AggregatorKind.SUM) {
+    out.sum = toSum(metric, startTime, aggregationTemporality);
+  }
+
+  /*
   if (isSum(metric)) {
     out.sum = toSum(metric, startTime);
   } else if (metric.aggregator.kind === AggregatorKind.LAST_VALUE) {
@@ -35,18 +41,21 @@ export function toMetric(metric: MetricRecord, startTime: number): IMetric {
   } else if (metric.aggregator.kind === AggregatorKind.HISTOGRAM) {
     out.histogram = toHistogram(metric, startTime);
   }
+  */
 
   return out;
 }
 
-function isSum(metric: MetricRecord) {
+/*
+function isSum(metric: MetricData) {
   return metric.aggregator.kind === AggregatorKind.SUM ||
     metric.descriptor.metricKind === MetricKind.OBSERVABLE_COUNTER ||
     metric.descriptor.metricKind === MetricKind.OBSERVABLE_UP_DOWN_COUNTER;
 }
+*/
 
 function toAggregationTemporality(
-  metric: MetricRecord
+  metric: MetricData
 ): EAggregationTemporality {
   if (metric.descriptor.metricKind === MetricKind.OBSERVABLE_GAUGE) {
     return EAggregationTemporality.AGGREGATION_TEMPORALITY_UNSPECIFIED;
@@ -63,25 +72,26 @@ function toAggregationTemporality(
   return EAggregationTemporality.AGGREGATION_TEMPORALITY_UNSPECIFIED;
 }
 
-function toSum(
-  metric: MetricRecord,
-  startTime: number,
-): ISum {
-  return {
-    dataPoints: [toNumberDataPoint(metric, startTime)],
-    isMonotonic:
-      metric.descriptor.metricKind === MetricKind.COUNTER ||
-      metric.descriptor.metricKind === MetricKind.OBSERVABLE_COUNTER,
-    aggregationTemporality: toAggregationTemporality(metric),
-  };
-}
-
 function toGauge(
-  metric: MetricRecord,
+  metric: MetricData,
   startTime: number,
 ): IGauge {
   return {
-    dataPoints: [toNumberDataPoint(metric, startTime)],
+    dataPoints: toDataPoints(metric, startTime),
+  };
+}
+
+function toSum(
+  metric: MetricData,
+  startTime: number,
+  aggregationTemporality: AggregationTemporality
+): ISum {
+  return {
+    dataPoints: toDataPoints(metric, startTime),
+    isMonotonic:
+      metric.descriptor.type === InstrumentType.COUNTER ||
+      metric.descriptor.type === InstrumentType.OBSERVABLE_COUNTER,
+    aggregationTemporality: toAggregationTemporality(aggregationTemporality),
   };
 }
 
@@ -95,27 +105,24 @@ function toHistogram(
   };
 }
 
-function toNumberDataPoint(
-  metric: MetricRecord,
+function toDataPoints(
+  metric: MetricData,
   startTime: number,
-): INumberDataPoint {
-  const out: INumberDataPoint = {
-    attributes: toAttributes(metric.attributes),
-    startTimeUnixNano: startTime,
-    timeUnixNano: hrTimeToNanoseconds(
-      metric.aggregator.toPoint().timestamp
-    ),
-  };
+): INumberDataPoint[] {
+  return metric.dataPoints.map(point => {
+    const numberDataPoint: INumberDataPoint = {
+      attributes: toAttributes(point.attributes),
+      startTimeUnixNano: startTime,
+      timeUnixNano: hrTimeToNanoseconds(point.endTime)
+    };
 
-  if (metric.descriptor.valueType === ValueType.INT) {
-    out.asInt = metric.aggregator.toPoint().value as number;
-  }
+    if (metric.descriptor.valueType === ValueType.INT ||
+        metric.descriptor.valueType === ValueType.DOUBLE) {
+      numberDataPoint.asInt = point.value as number;
+    }
 
-  if (metric.descriptor.valueType === ValueType.DOUBLE) {
-    out.asDouble = metric.aggregator.toPoint().value as number;
-  }
-
-  return out;
+    return numberDataPoint;
+  });
 }
 
 function toHistogramDataPoint(
