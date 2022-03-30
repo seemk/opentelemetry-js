@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { InstrumentationLibrary } from '@opentelemetry/core';
-import type { Resource } from '@opentelemetry/resources';
-import type { ResourceMetrics, MetricData } from '@opentelemetry/sdk-metrics-base-wip';
+import { AggregationTemporality } from '@opentelemetry/api-metrics';
+import type { ResourceMetrics } from '@opentelemetry/sdk-metrics-base-wip';
 import { toAttributes } from '../common/internal';
 import { toMetric } from './internal';
-import type { IExportMetricsServiceRequest, IResourceMetrics } from './types';
+import type { IExportMetricsServiceRequest } from './types';
 
-export function createExportMetricsServiceRequest(metrics: ResourceMetrics[], startTime: number): IExportMetricsServiceRequest | null {
+export function createExportMetricsServiceRequest(metrics: ResourceMetrics[], startTime: number, aggregationTemporality: AggregationTemporality): IExportMetricsServiceRequest | null {
   if (metrics.length === 0) {
     return null;
   }
@@ -36,12 +35,15 @@ export function createExportMetricsServiceRequest(metrics: ResourceMetrics[], st
           name: instrumentationLibrary.name,
           version: instrumentationLibrary.version,
         },
-        metrics: ilMetrics.map(m => toMetric(m, startTime)),
+        metrics: ilMetrics.map(m => toMetric(m, startTime, aggregationTemporality)),
+        // schemaUrl: librarySchemaUrl,
       })),
+      // schemaUrl: resourceSchemaUrl,
     }))
   };
 }
 
+/*
 type IntermediateResourceMetrics = {
   resource: Resource,
   resourceMetrics: IntermediateInstrumentationLibraryMetrics[],
@@ -54,26 +56,9 @@ type IntermediateInstrumentationLibraryMetrics = {
   librarySchemaUrl?: string,
 };
 
-function metricRecordsToResourceMetrics(metrics: ResourceMetrics[]): IResourceMetrics[] {
-  return metrics.map(({ resource, instrumentationLibraryMetrics }) => {
-    return {
-      resource: {
-        attributes: toAttributes(resource.attributes),
-        droppedAttributesCount: 0,
-      },
-      instrumentationLibraryMetrics: instrumentationLibraryMetrics.map(({ instrumentationLibrary, metrics: ilMetrics }) => {
-        return {
-          instrumentationLibrary: {
-            name: instrumentationLibrary.name,
-            version: instrumentationLibrary.version,
-            schemaUrl: instrumentationLibrary.schemaUrl
-          },
-          metrics: ilMetrics.map()
-          
-        };
-      }),
-    }
-  });
+function metricRecordsToResourceMetrics(metricRecords: MetricRecord[]): IntermediateResourceMetrics[] {
+  const resourceMap: Map<Resource, Map<string, MetricRecord[]>> = new Map();
+
   for (const record of metricRecords) {
     let ilmMap = resourceMap.get(record.resource);
 
@@ -117,3 +102,4 @@ function metricRecordsToResourceMetrics(metrics: ResourceMetrics[]): IResourceMe
 
   return out;
 }
+*/

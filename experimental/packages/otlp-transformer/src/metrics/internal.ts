@@ -15,10 +15,9 @@
  */
 import { AggregationTemporality, ValueType } from '@opentelemetry/api-metrics';
 import { hrTimeToNanoseconds } from '@opentelemetry/core';
-import { AggregatorKind, Histogram, InstrumentType, MetricData } from '@opentelemetry/sdk-metrics-base-wip';
+import { AggregatorKind, DataPoint, Histogram, InstrumentType, MetricData } from '@opentelemetry/sdk-metrics-base-wip';
 import { toAttributes } from '../common/internal';
 import { EAggregationTemporality, IGauge, IHistogram, IHistogramDataPoint, IMetric, INumberDataPoint, ISum } from './types';
-
 
 export function toMetric(metric: MetricData, startTime: number, aggregationTemporality: AggregationTemporality): IMetric {
   const out: IMetric = {
@@ -31,41 +30,21 @@ export function toMetric(metric: MetricData, startTime: number, aggregationTempo
     out.gauge = toGauge(metric, startTime);
   } if (metric.aggregation === AggregatorKind.SUM) {
     out.sum = toSum(metric, startTime, aggregationTemporality);
+  } if (metric.aggregation === AggregatorKind.HISTOGRAM) {
+    out.histogram = toHistogram(metric, startTime, aggregationTemporality);
   }
-
-  /*
-  if (isSum(metric)) {
-    out.sum = toSum(metric, startTime);
-  } else if (metric.aggregator.kind === AggregatorKind.LAST_VALUE) {
-    out.gauge = toGauge(metric, startTime);
-  } else if (metric.aggregator.kind === AggregatorKind.HISTOGRAM) {
-    out.histogram = toHistogram(metric, startTime);
-  }
-  */
 
   return out;
 }
 
-/*
-function isSum(metric: MetricData) {
-  return metric.aggregator.kind === AggregatorKind.SUM ||
-    metric.descriptor.metricKind === MetricKind.OBSERVABLE_COUNTER ||
-    metric.descriptor.metricKind === MetricKind.OBSERVABLE_UP_DOWN_COUNTER;
-}
-*/
-
 function toAggregationTemporality(
-  metric: MetricData
+  aggregationTemporality: AggregationTemporality
 ): EAggregationTemporality {
-  if (metric.descriptor.metricKind === MetricKind.OBSERVABLE_GAUGE) {
-    return EAggregationTemporality.AGGREGATION_TEMPORALITY_UNSPECIFIED;
-  }
-
-  if (metric.aggregationTemporality === AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA) {
+  if (aggregationTemporality === AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA) {
     return EAggregationTemporality.AGGREGATION_TEMPORALITY_DELTA;
   }
 
-  if (metric.aggregationTemporality === AggregationTemporality.AGGREGATION_TEMPORALITY_CUMULATIVE) {
+  if (aggregationTemporality === AggregationTemporality.AGGREGATION_TEMPORALITY_CUMULATIVE) {
     return EAggregationTemporality.AGGREGATION_TEMPORALITY_CUMULATIVE;
   }
 
@@ -96,12 +75,13 @@ function toSum(
 }
 
 function toHistogram(
-  metric: MetricRecord,
+  metric: MetricData,
   startTime: number,
+  aggregationTemporality: AggregationTemporality
 ): IHistogram {
   return {
-    dataPoints: [toHistogramDataPoint(metric, startTime)],
-    aggregationTemporality: toAggregationTemporality(metric),
+    dataPoints: toHistogramDataPoints(metric, startTime),
+    aggregationTemporality: toAggregationTemporality(aggregationTemporality),
   };
 }
 
@@ -125,20 +105,20 @@ function toDataPoints(
   });
 }
 
-function toHistogramDataPoint(
-  metric: MetricRecord,
+function toHistogramDataPoints(
+  metric: MetricData,
   startTime: number,
-): IHistogramDataPoint {
-  const point = metric.aggregator.toPoint() as Point<Histogram>;
-  return {
-    attributes: toAttributes(metric.attributes),
-    bucketCounts: point.value.buckets.counts,
-    explicitBounds: point.value.buckets.boundaries,
-    count: point.value.count,
-    sum: point.value.sum,
-    startTimeUnixNano: startTime,
-    timeUnixNano: hrTimeToNanoseconds(
-      metric.aggregator.toPoint().timestamp
-    ),
-  };
+): IHistogramDataPoint[] {
+  return metric.dataPoints.map(point => {
+    const histogramPoint = point as DataPoint<Histogram>;
+    return {
+      attributes: toAttributes(point.attributes),
+      bucketCounts: histogramPoint.value.buckets.counts,
+      explicitBounds: histogramPoint.value.buckets.boundaries,
+      count: histogramPoint.value.count,
+      sum: histogramPoint.value.sum,
+      startTimeUnixNano: startTime,
+      timeUnixNano: hrTimeToNanoseconds(point.endTime),
+    };
+  });
 }
