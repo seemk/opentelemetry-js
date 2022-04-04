@@ -22,7 +22,7 @@ import { MetricCollector } from '../../src/state/MetricCollector';
  */
 export class TestMetricReader extends MetricReader {
   constructor(aggregationTemporalitySelector?: AggregationTemporalitySelector) {
-    super(aggregationTemporalitySelector ?? CumulativeTemporalitySelector)
+    super(aggregationTemporalitySelector ?? CumulativeTemporalitySelector);
   }
 
   protected onForceFlush(): Promise<void> {

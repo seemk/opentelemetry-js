@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { InstrumentType } from "../InstrumentDescriptor";
+import { InstrumentType } from '../InstrumentDescriptor';
 
 /**
  * AggregationTemporality indicates the way additive quantities are expressed.
@@ -39,4 +39,4 @@ export const DeltaTemporalitySelector: AggregationTemporalitySelector = (instrum
     case InstrumentType.OBSERVABLE_UP_DOWN_COUNTER:
       return AggregationTemporality.CUMULATIVE;
   }
-}
+};
