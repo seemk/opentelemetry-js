@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-import { HrTime, Attributes } from '@opentelemetry/api';
+export type CommonReaderOptions = {
+  timeoutMillis?: number
+};
 
-/**
- * Represents a timed event.
- * A timed event is an event with a timestamp.
- */
-export interface TimedEvent {
-  time: HrTime;
-  /** The name of the event. */
-  name: string;
-  /** The attributes of the event. */
-  attributes?: Attributes;
-}
+export type CollectionOptions = CommonReaderOptions;
+
+export type ShutdownOptions = CommonReaderOptions;
+
+export type ForceFlushOptions = CommonReaderOptions;

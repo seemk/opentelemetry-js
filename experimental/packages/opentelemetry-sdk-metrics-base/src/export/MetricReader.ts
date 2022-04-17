@@ -20,17 +20,7 @@ import { MetricProducer } from './MetricProducer';
 import { ResourceMetrics } from './MetricData';
 import { callWithTimeout, Maybe } from '../utils';
 import { InstrumentType } from '../InstrumentDescriptor';
-
-
-export type ReaderOptions = {
-  timeoutMillis?: number
-};
-
-export type ReaderCollectionOptions = ReaderOptions;
-
-export type ReaderShutdownOptions = ReaderOptions;
-
-export type ReaderForceFlushOptions = ReaderOptions;
+import { CollectionOptions, ForceFlushOptions, ShutdownOptions } from '../types';
 
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/sdk.md#metricreader
 
@@ -54,6 +44,9 @@ export abstract class MetricReader {
    * @param metricProducer
    */
   setMetricProducer(metricProducer: MetricProducer) {
+    if (this._metricProducer) {
+      throw new Error('MetricReader can not be bound to a MeterProvider again.');
+    }
     this._metricProducer = metricProducer;
     this.onInitialized();
   }
@@ -93,7 +86,7 @@ export abstract class MetricReader {
   /**
    * Collect all metrics from the associated {@link MetricProducer}
    */
-  async collect(options?: ReaderCollectionOptions): Promise<Maybe<ResourceMetrics>> {
+  async collect(options?: CollectionOptions): Promise<Maybe<ResourceMetrics>> {
     if (this._metricProducer === undefined) {
       throw new Error('MetricReader is not bound to a MetricProducer');
     }
@@ -118,7 +111,7 @@ export abstract class MetricReader {
    * <p> NOTE: this operation will continue even after the promise rejects due to a timeout.
    * @param options options with timeout.
    */
-  async shutdown(options?: ReaderShutdownOptions): Promise<void> {
+  async shutdown(options?: ShutdownOptions): Promise<void> {
     // Do not call shutdown again if it has already been called.
     if (this._shutdown) {
       api.diag.error('Cannot call shutdown twice.');
@@ -141,7 +134,7 @@ export abstract class MetricReader {
    * <p> NOTE: this operation will continue even after the promise rejects due to a timeout.
    * @param options options with timeout.
    */
-  async forceFlush(options?: ReaderForceFlushOptions): Promise<void> {
+  async forceFlush(options?: ForceFlushOptions): Promise<void> {
     if (this._shutdown) {
       api.diag.warn('Cannot forceFlush on already shutdown MetricReader.');
       return;

@@ -20,6 +20,7 @@ import { ResourceMetrics } from '../export/MetricData';
 import { MetricProducer } from '../export/MetricProducer';
 import { MetricReader } from '../export/MetricReader';
 import { InstrumentType } from '../InstrumentDescriptor';
+import { ForceFlushOptions, ShutdownOptions } from '../types';
 import { MeterProviderSharedState } from './MeterProviderSharedState';
 
 /**
@@ -45,15 +46,15 @@ export class MetricCollector implements MetricProducer {
   /**
    * Delegates for MetricReader.forceFlush.
    */
-  async forceFlush(): Promise<void> {
-    await this._metricReader.forceFlush();
+  async forceFlush(options?: ForceFlushOptions): Promise<void> {
+    await this._metricReader.forceFlush(options);
   }
 
   /**
    * Delegates for MetricReader.shutdown.
    */
-  async shutdown(): Promise<void> {
-    await this._metricReader.shutdown();
+  async shutdown(options?: ShutdownOptions): Promise<void> {
+    await this._metricReader.shutdown(options);
   }
 
   getAggregationTemporality(instrumentType: InstrumentType) {
