@@ -107,13 +107,12 @@ describe('PeriodicExportingMetricReader', () => {
   describe('constructor', () => {
     it('should construct PeriodicExportingMetricReader without exceptions', () => {
       const exporter = new TestDeltaMetricExporter();
-      new PeriodicExportingMetricReader({
+      assert.doesNotThrow(() => new PeriodicExportingMetricReader({
           exporter,
           exportIntervalMillis: 4000,
           exportTimeoutMillis: 3000
         }
-      );
-      //assert.strictEqual(reader.getAggregationTemporality(), exporter.getAggregationTemporality(InstrumentType.COUNTER));
+      ));
     });
 
     it('should throw when interval less or equal to 0', () => {
