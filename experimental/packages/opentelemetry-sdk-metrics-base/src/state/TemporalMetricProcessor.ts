@@ -108,6 +108,7 @@ export class TemporalMetricProcessor<T> {
     // 2. Delta Aggregation time span: (lastCollectionTime, collectionTime]
     return this._aggregator.toMetricData(
       instrumentDescriptor,
+      aggregationTemporality,
       AttributesMapToAccumulationRecords(result),
       /* startTime */ aggregationTemporality === AggregationTemporality.CUMULATIVE ? sdkStartTime : lastCollectionTime,
       /* endTime */ collectionTime);

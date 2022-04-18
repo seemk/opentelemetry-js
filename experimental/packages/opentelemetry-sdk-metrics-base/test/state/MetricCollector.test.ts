@@ -36,9 +36,7 @@ describe('MetricCollector', () => {
       const exporters = [ new TestMetricExporter(), new TestDeltaMetricExporter() ];
       for (const exporter of exporters) {
         const reader = new TestMetricReader(exporter.getAggregationTemporality);
-        const metricCollector = new MetricCollector(meterProviderSharedState, reader);
-
-        //assert.strictEqual(metricCollector.aggregatorTemporality, exporter.getPreferredAggregationTemporality());
+        assert.doesNotThrow(() => new MetricCollector(meterProviderSharedState, reader));
       }
     });
   });
