@@ -16,6 +16,8 @@
 
 import { ExportResultCode } from '@opentelemetry/core';
 import {
+  AggregationTemporality,
+  InstrumentType,
   ResourceMetrics,
 } from '@opentelemetry/sdk-metrics-base';
 import * as assert from 'assert';
@@ -23,6 +25,7 @@ import * as sinon from 'sinon';
 import { collect, mockCounter, mockObservableGauge, setUp, shutdown } from '../metricsHelper';
 import { OTLPExporterBase, OTLPExporterConfigBase } from '@opentelemetry/otlp-exporter-base';
 import { IExportMetricsServiceRequest } from '@opentelemetry/otlp-transformer';
+import { OTLPMetricExporterBase } from '../../src/OTLPMetricExporterBase';
 
 type CollectorExporterConfig = OTLPExporterConfigBase;
 class OTLPMetricExporter extends OTLPExporterBase<
@@ -40,6 +43,8 @@ class OTLPMetricExporter extends OTLPExporterBase<
     return { resourceMetrics: [] };
   }
 }
+
+class PushExporter extends OTLPMetricExporterBase<OTLPMetricExporter> {}
 
 describe('OTLPMetricExporter - common', () => {
   let collectorExporter: OTLPMetricExporter;
@@ -189,6 +194,55 @@ describe('OTLPMetricExporter - common', () => {
     it('should call onShutdown', async () => {
       await collectorExporter.shutdown();
       assert.strictEqual(onShutdownSpy.callCount, 1);
+    });
+  });
+
+  describe('temporality selection', () => {
+    const ALL_INSTRUMENT_TYPES = Object.values(InstrumentType);
+
+    it('chooses cumulative temporality selector by default', () => {
+      const exporter = new PushExporter(new OTLPMetricExporter());
+
+      assert(
+        ALL_INSTRUMENT_TYPES.every(
+          instrumentType =>
+            exporter.selectAggregationTemporality(instrumentType) === AggregationTemporality.CUMULATIVE
+        )
+      );
+    });
+    it('chooses delta temporality selector for delta temporality preference', () => {
+      const exporter = new PushExporter(new OTLPMetricExporter(), {
+        temporalityPreference: AggregationTemporality.DELTA
+      });
+
+      assert.strictEqual(
+        exporter.selectAggregationTemporality(InstrumentType.COUNTER),
+        AggregationTemporality.DELTA
+      );
+
+      assert.strictEqual(
+        exporter.selectAggregationTemporality(InstrumentType.OBSERVABLE_COUNTER),
+        AggregationTemporality.DELTA
+      );
+
+      assert.strictEqual(
+        exporter.selectAggregationTemporality(InstrumentType.HISTOGRAM),
+        AggregationTemporality.DELTA
+      );
+
+      assert.strictEqual(
+        exporter.selectAggregationTemporality(InstrumentType.OBSERVABLE_GAUGE),
+        AggregationTemporality.DELTA
+      );
+
+      assert.strictEqual(
+        exporter.selectAggregationTemporality(InstrumentType.UP_DOWN_COUNTER),
+        AggregationTemporality.CUMULATIVE
+      );
+      assert.strictEqual(
+        exporter.selectAggregationTemporality(InstrumentType.OBSERVABLE_UP_DOWN_COUNTER),
+        AggregationTemporality.CUMULATIVE
+      );
     });
   });
 });
